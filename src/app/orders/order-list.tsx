@@ -414,6 +414,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Fade,
 } from "@mui/material";
 import {
   CheckCircleOutline,
@@ -730,123 +731,148 @@ const OrdersList = ({ toggleTheme, mode }: Props) => {
       </Box>
 
       {/* ================= SOCKET DIALOG ================= */}
+<Dialog
+  open={openNewOrderDialog}
+  onClose={() => setOpenNewOrderDialog(false)}
+  maxWidth="sm"
+  fullWidth
+  TransitionComponent={Fade}
+  PaperProps={{
+    sx: {
+      borderRadius: "12px",
+      boxShadow: "0px 20px 60px rgba(0,0,0,0.15)",
+      overflow: "hidden",
+    },
+  }}
+>
+  {/* HEADER */}
+  <DialogTitle
+    sx={{
+      fontWeight: 600,
+      fontSize: "18px",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      px: 3,
+      pt: 2,
+    }}
+  >
+    Order Details
 
-      <Dialog
-        open={openNewOrderDialog}
-        onClose={() => setOpenNewOrderDialog(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            height: 500,          // ✅ fixed height
-            display: "flex",
-            flexDirection: "column",
-          },
-        }}
-      >
-        <DialogTitle>
-          Order Details
-          <IconButton
-            size="small"
-            onClick={() => setOpenNewOrderDialog(false)}
-            sx={{ float: "right" }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
+    <IconButton onClick={() => setOpenNewOrderDialog(false)}>
+      <CloseIcon />
+    </IconButton>
+  </DialogTitle>
 
-        <DialogContent
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
-          <Typography fontWeight={600} mb={1}>
-            Order ID: {socketOrder?.orderId}
-          </Typography>
+  {/* CONTENT */}
+  <DialogContent sx={{ px: 3 }}>
+    <Typography sx={{ fontWeight: 600, mb: 1 }}>
+      Order ID: {socketOrder?.orderId}
+    </Typography>
 
-          <Typography mb={2}>
-            Customer: {socketOrder?.customerName}
-          </Typography>
+    <Typography sx={{ mb: 2 }}>
+      Customer: <b>{socketOrder?.customerName}</b>
+    </Typography>
 
-          {/* ✅ Scrollable Table Wrapper */}
-          <Box
-            sx={{
-              flex: 1,
-              overflowY: "auto",
-              border: "1px solid #eee",
-              borderRadius: 1,
-            }}
-          >
-            <Table size="small" stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Product</TableCell>
-                  <TableCell align="right">Price</TableCell>
-                  <TableCell align="right">Qty</TableCell>
-                  <TableCell align="right">Total</TableCell>
-                </TableRow>
-              </TableHead>
+    {/* TABLE */}
+    <Box
+      sx={{
+        border: "1px solid #eee",
+        borderRadius: "8px",
+        overflow: "hidden",
+      }}
+    >
+      <Table size="small">
+        <TableHead sx={{ background: "#fafafa" }}>
+          <TableRow>
+            <TableCell>Product</TableCell>
+            <TableCell align="right">Price</TableCell>
+            <TableCell align="right">Qty</TableCell>
+            <TableCell align="right">Total</TableCell>
+          </TableRow>
+        </TableHead>
 
-              <TableBody>
-                {socketOrder?.items?.map((item, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell align="right">₹{item.price}</TableCell>
-                    <TableCell align="right">{item.quantity}</TableCell>
-                    <TableCell align="right">₹{item.total}</TableCell>
-                  </TableRow>
-                ))}
+        <TableBody>
+          {socketOrder?.items?.map((item, i) => (
+            <TableRow key={i}>
+              <TableCell>{item.name}</TableCell>
+              <TableCell align="right">₹{item.price}</TableCell>
+              <TableCell align="right">{item.quantity}</TableCell>
+              <TableCell align="right">₹{item.total}</TableCell>
+            </TableRow>
+          ))}
 
-                <TableRow>
-                  <TableCell colSpan={3} align="right">
-                    <b>Grand Total</b>
-                  </TableCell>
-                  <TableCell align="right">
-                    <b>₹{socketOrder?.totalAmount}</b>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </Box>
+          <TableRow>
+            <TableCell colSpan={3} align="right">
+              <b>Grand Total</b>
+            </TableCell>
+            <TableCell align="right">
+              <b>₹{socketOrder?.totalAmount}</b>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </Box>
 
-          {/* ✅ Order On Field */}
-          <Typography mt={2} fontSize={13} color="text.secondary">
-            Order On:{" "}
-            {socketOrder?.createdAt
-              ? new Date(socketOrder.createdAt).toLocaleString()
-              : "-"}
-          </Typography>
-        </DialogContent>
+    {/* DATE */}
+    <Typography
+      sx={{
+        mt: 2,
+        fontSize: "12px",
+        color: "#777",
+      }}
+    >
+      Order On:{" "}
+      {socketOrder?.createdAt
+        ? new Date(socketOrder.createdAt).toLocaleString()
+        : "-"}
+    </Typography>
+  </DialogContent>
 
-        <DialogActions>
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={() => {
-              if (!socketOrder) return;
-              updateStatus(socketOrder.id, "REJECTED");
-              setOpenNewOrderDialog(false);
-            }}
-          >
-            Reject
-          </Button>
+  {/* ACTIONS */}
+  <DialogActions
+    sx={{
+      justifyContent: "flex-end",
+      gap: 1,
+      px: 3,
+      pb: 2,
+    }}
+  >
+    <Button
+      variant="outlined"
+      sx={{
+        borderRadius: "8px",
+        textTransform: "none",
+        px: 3,
+      }}
+      onClick={() => {
+        if (!socketOrder) return;
+        updateStatus(socketOrder.id, "REJECTED");
+        setOpenNewOrderDialog(false);
+      }}
+    >
+      Reject
+    </Button>
 
-          <Button
-            variant="contained"
-            color="success"
-            onClick={() => {
-              if (!socketOrder) return;
-              updateStatus(socketOrder.id, "ACCEPTED");
-              setOpenNewOrderDialog(false);
-            }}
-          >
-            Accept
-          </Button>
-        </DialogActions>
-      </Dialog>
+    <Button
+      variant="contained"
+      sx={{
+        borderRadius: "8px",
+        textTransform: "none",
+        px: 3,
+        background: "#000",
+        "&:hover": { background: "#222" },
+      }}
+      onClick={() => {
+        if (!socketOrder) return;
+        updateStatus(socketOrder.id, "ACCEPTED");
+        setOpenNewOrderDialog(false);
+      }}
+    >
+      Accept
+    </Button>
+  </DialogActions>
+</Dialog>
 
     </>
   );
