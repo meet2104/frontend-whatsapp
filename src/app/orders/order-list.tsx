@@ -20,12 +20,15 @@ import {
   DialogActions,
   Button,
   InputAdornment,
+  Divider,
+  Stack,
 } from "@mui/material";
 import {
   Search,
   CheckCircleOutline,
   CancelOutlined,
   VisibilityOutlined,
+  Close,
 } from "@mui/icons-material";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -45,6 +48,24 @@ interface Order {
   summary?: string;
   createdAt: string;
   owner?: { name?: string };
+}
+
+interface NewOrderItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  total: number;
+}
+
+interface NewOrderPayload {
+  id: string;
+  orderId: number;
+  customerName: string;
+  items: NewOrderItem[];
+  totalAmount: number;
+  summary?: string;
+  createdAt: string;
 }
 
 interface Props {
@@ -73,8 +94,28 @@ const OrdersList = ({ toggleTheme, mode }: Props) => {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [openNewOrderDialog, setOpenNewOrderDialog] = useState(false);
+  const [newOrder, setNewOrder] = useState<NewOrderPayload | null>(null);
+  const [updatingDialogStatus, setUpdatingDialogStatus] = useState(false);
 
   const lastRequestRef = useRef("");
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(value);
+
+  const formatDateTime = (value: string) =>
+    new Date(value).toLocaleString("en-IN", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -149,7 +190,8 @@ const OrdersList = ({ toggleTheme, mode }: Props) => {
     const socket = getSocket();
     if (!socket) return;
 
-    socket.on("new-order", () => {
+    socket.on("new-order", (payload: NewOrderPayload) => {
+      setNewOrder(payload);
       setOpenNewOrderDialog(true);
       lastRequestRef.current = "";
       fetchOrders();
@@ -165,11 +207,20 @@ const OrdersList = ({ toggleTheme, mode }: Props) => {
     status: "ACCEPTED" | "REJECTED"
   ) => {
     try {
+      if (newOrder?.id === orderId) {
+        setUpdatingDialogStatus(true);
+      }
       await API.put(`/orders/${orderId}/status`, { status });
       lastRequestRef.current = "";
+      if (newOrder?.id === orderId) {
+        setOpenNewOrderDialog(false);
+        setNewOrder(null);
+      }
       fetchOrders();
     } catch (error) {
       console.error("UPDATE STATUS ERROR:", error);
+    } finally {
+      setUpdatingDialogStatus(false);
     }
   };
 
@@ -379,14 +430,143 @@ const OrdersList = ({ toggleTheme, mode }: Props) => {
         <Footer />
       </Box>
 
-      <Dialog open={openNewOrderDialog} onClose={() => setOpenNewOrderDialog(false)}>
-        <DialogTitle>New Order Received</DialogTitle>
-        <DialogContent>
-          <Typography>A new order has just been placed.</Typography>
+      <Dialog
+        open={openNewOrderDialog}
+        onClose={() => {
+          if (!updatingDialogStatus) {
+            setOpenNewOrderDialog(false);
+          }
+        }}
+        fullWidth
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: "hidden",
+          },
+        }}
+      >
+        <DialogTitle sx={{ px: 3, pt: 3, pb: 2 }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Typography variant="h5" fontWeight={500}>
+              Order Details
+            </Typography>
+            <IconButton
+              onClick={() => setOpenNewOrderDialog(false)}
+              disabled={updatingDialogStatus}
+              size="small"
+            >
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ px: 3, pb: 2 }}>
+          {newOrder && (
+            <Stack spacing={2}>
+              <Box>
+                <Typography variant="h6" fontWeight={700}>
+                  Order ID: {newOrder.orderId}
+                </Typography>
+                <Typography variant="h6" fontWeight={400} sx={{ mt: 1 }}>
+                  Customer: {newOrder.customerName}
+                </Typography>
+              </Box>
+
+              <TableContainer
+                component={Paper}
+                variant="outlined"
+                sx={{
+                  borderRadius: 2,
+                  borderColor: "divider",
+                }}
+              >
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Product</TableCell>
+                      <TableCell align="right">Price</TableCell>
+                      <TableCell align="right">Qty</TableCell>
+                      <TableCell align="right">Total</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {newOrder.items.map((item) => (
+                      <TableRow key={`${newOrder.id}-${item.productId}`}>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell align="right">
+                          {formatCurrency(item.price)}
+                        </TableCell>
+                        <TableCell align="right">{item.quantity}</TableCell>
+                        <TableCell align="right">
+                          {formatCurrency(item.total)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow>
+                      <TableCell
+                        colSpan={3}
+                        align="right"
+                        sx={{ fontWeight: 700, borderBottom: 0 }}
+                      >
+                        Grand Total
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{ fontWeight: 700, borderBottom: 0 }}
+                      >
+                        {formatCurrency(newOrder.totalAmount)}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {newOrder.summary ? (
+                <>
+                  <Divider />
+                  <Typography variant="body2" color="text.secondary">
+                    Summary: {newOrder.summary}
+                  </Typography>
+                </>
+              ) : null}
+
+              <Typography variant="body2" color="text.secondary">
+                Order On: {formatDateTime(newOrder.createdAt)}
+              </Typography>
+            </Stack>
+          )}
         </DialogContent>
-        <DialogActions>
-          <Button variant="contained" onClick={() => setOpenNewOrderDialog(false)}>
-            OK
+
+        <DialogActions sx={{ px: 3, pb: 3, justifyContent: "flex-end", gap: 1.5 }}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            disabled={!newOrder || updatingDialogStatus}
+            onClick={() => newOrder && updateStatus(newOrder.id, "REJECTED")}
+            sx={{
+              minWidth: 110,
+              fontWeight: 700,
+              borderColor: "text.primary",
+              color: "text.primary",
+            }}
+          >
+            {updatingDialogStatus ? "Saving..." : "Reject"}
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!newOrder || updatingDialogStatus}
+            onClick={() => newOrder && updateStatus(newOrder.id, "ACCEPTED")}
+            sx={{
+              minWidth: 110,
+              fontWeight: 700,
+              bgcolor: "#111",
+              "&:hover": {
+                bgcolor: "#000",
+              },
+            }}
+          >
+            {updatingDialogStatus ? "Saving..." : "Accept"}
           </Button>
         </DialogActions>
       </Dialog>
