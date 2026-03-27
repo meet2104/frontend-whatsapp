@@ -148,12 +148,12 @@ const OrderDetails = ({ toggleTheme, mode }: any) => {
           backgroundColor: mode === "dark" ? "#121212" : "#f4f6f8",
         }}
       >
-        <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 }, height: "100%", boxSizing: "border-box" }}>
+        <Box sx={{ p: 3, height: "100%", boxSizing: "border-box" }}>
           <Paper
             elevation={6}
             sx={{
               height: "100%",
-              p: { xs: 2, sm: 3 },
+              p: 3,
               borderRadius: 2,
               border: "1px solid",
               borderColor: "divider",
@@ -166,11 +166,7 @@ const OrderDetails = ({ toggleTheme, mode }: any) => {
             </Typography>
 
             {/* ================= DETAILS ================= */}
-            <Box
-              display="grid"
-              gridTemplateColumns={{ xs: "1fr", md: "1fr 1fr" }}
-              gap={2}
-            >
+            <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
               <TextField label="Order ID" value={order.orderId} disabled />
               <TextField label="Customer ID" value={order.customerId} disabled />
               <TextField label="Status" value={order.status} disabled />
@@ -198,10 +194,10 @@ const OrderDetails = ({ toggleTheme, mode }: any) => {
               sx={{
                 flexGrow: 1,
                 minHeight: 80,
-                overflow: "auto",
+                overflowY: "auto",
               }}
             >
-              <Table size="small" stickyHeader sx={{ minWidth: 560 }}>
+              <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
                     <TableCell>Product</TableCell>
@@ -234,7 +230,7 @@ const OrderDetails = ({ toggleTheme, mode }: any) => {
             </TableContainer>
 
             {/* ================= ACTION ================= */}
-            <Box mt={1} display="flex" justifyContent="flex-end" flexWrap="wrap">
+            <Box mt={1} display="flex" justifyContent="flex-end">
               <Button variant="outlined" onClick={() => navigate("/orders")}>
                 Back
               </Button>
